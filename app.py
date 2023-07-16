@@ -10,9 +10,9 @@ setup_logger('logs/neo4jdb.logs')
 app = Flask(__name__)
 
 
-@app.route('/', methods=['GET'])
+@app.route('/health', methods=['GET'])
 def hello():
-    return jsonify('Neo4jDB')
+    return jsonify('ok'), 200
 
 
 app.register_blueprint(upload_bp, url_prefix='/upload')

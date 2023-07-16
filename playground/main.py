@@ -12,15 +12,15 @@ if __name__ == '__main__':
         #
 
         # Find map of all the concepts
-        next = find_concepts_no_pre()
-        pre = []
-        while len(next):
-            print("Next ->", [x.get('concept_id') for x in next])
-            pre.extend(next)
-            next = find_concepts_with_pre([i.get('concept_id') for i in pre])
-            # Filter out pre
-            next = [n for n in next if n.get('course_id') in pre]
-            print(next)
+        # next = find_concepts_no_pre()
+        # pre = []
+        # while len(next):
+        #     print("Next ->", [x.get('concept_id') for x in next])
+        #     pre.extend(next)
+        #     next = find_concepts_with_pre([i.get('concept_id') for i in pre])
+        #     # Filter out pre
+        #     next = [n for n in next if n.get('course_id') in pre]
+        #     print(next)
 
         # Find prerequisite
         # pre = find_prerequisites_of("c1")
@@ -44,7 +44,7 @@ if __name__ == '__main__':
         #                                     failed_concepts)
         #     print(student)
 
-        # reset_all()
+        reset_all()
 
     except Exception as e:
         print(e)

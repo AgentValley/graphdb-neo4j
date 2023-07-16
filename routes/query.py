@@ -25,6 +25,7 @@ query_map = {
     "all_courses": "MATCH (c:Course) RETURN c",
     "course_with_id": "MATCH (c:Course {course_id: $course_id}) RETURN c",
     "all_concepts": "MATCH (co:Concept) RETURN co",
+    "concepts_for_course_limit": "MATCH (c:Course {course_id: $course_id})-[:has]->(co:Concept) RETURN co LIMIT $limit",
     "concept_with_id": "MATCH (co:Concept {concept_id: $concept_id}) RETURN co",
     "courses_owned_by_teacher": "MATCH (t:Teacher {teacher_id: $teacher_id})-[:OWNS]->(c:Course) RETURN c",
     "concepts_associated_with_course": "MATCH (c:Course {course_id: $course_id})-[:HAS]->(co:Concept) RETURN co",
@@ -41,14 +42,22 @@ def run_query(query):
     if query not in query_map:
         return jsonify({"error": "Invalid query key"}), 400
 
-    query_key = request.args.get('query_key')
-    query_id = request.args.get('query_id')
+    uid = request.args.get('uid')
+    cid = request.args.get('cid')
+    qid = request.args.get('qid')
+    limit = request.args.get('uid')
+
+    parameters = {}
+    if uid: parameters['teacher_id'] = uid
+    if cid: parameters['course_id'] = cid
+    if qid: parameters['concept_id'] = qid
+    if limit: parameters['limit'] = limit
 
     query = query_map[query]
     client = Neo4jClient()
 
-    log_info(f'Calling {query}', query_key, query_id)
-    result = client.run_query(query, **{f"{query_key}": query_id})
+    log_info(f'Calling {query}', parameters)
+    result = client.run_query(query, **parameters)
 
     log_info(f'Result', result)
     return jsonify(result)
