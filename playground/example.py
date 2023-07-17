@@ -14,7 +14,7 @@ def create_teacher():
 
 def create_course(course_id="course123"):
     # Create Course with Teacher relationship
-    course = client.create_course(course_id, teacher_id)
+    course = client.create_course_for_teacher(course_id, teacher_id)
     print("Course created:", course)
 
 

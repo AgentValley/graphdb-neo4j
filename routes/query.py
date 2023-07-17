@@ -20,17 +20,25 @@ queries
 """
 
 query_map = {
+    # Admin-Only
     "all_teachers": "MATCH (t:Teacher) RETURN t",
-    "teacher_with_id": "MATCH (t:Teacher {teacher_id: $teacher_id}) RETURN t",
     "all_courses": "MATCH (c:Course) RETURN c",
-    "course_with_id": "MATCH (c:Course {course_id: $course_id}) RETURN c",
     "all_concepts": "MATCH (co:Concept) RETURN co",
-    "concepts_for_course_limit": "MATCH (c:Course {course_id: $course_id})-[:has]->(co:Concept) RETURN co LIMIT $limit",
-    "concept_with_id": "MATCH (co:Concept {concept_id: $concept_id}) RETURN co",
+
+    # Teacher-Specific
+    "teacher_with_id": "MATCH (t:Teacher {teacher_id: $teacher_id}) RETURN t",
     "courses_owned_by_teacher": "MATCH (t:Teacher {teacher_id: $teacher_id})-[:OWNS]->(c:Course) RETURN c",
-    "concepts_associated_with_course": "MATCH (c:Course {course_id: $course_id})-[:HAS]->(co:Concept) RETURN co",
     "owner_of_course": "MATCH (t:Teacher)-[:OWNS]->(c:Course {course_id: $course_id}) RETURN t",
-    "concept_answer": "MATCH (co:Concept {concept_id: $concept_id}) RETURN co.que AS question, co.ans AS answer"
+
+    # User-Allowed
+    "course_with_id": "MATCH (c:Course {course_id: $course_id}) RETURN c",
+    "concepts_for_course_limit": "MATCH (c:Course {course_id: $course_id})-[:has]->(co:Concept) RETURN co LIMIT $limit",
+    "concepts_associated_with_course": "MATCH (c:Course {course_id: $course_id})-[:HAS]->(co:Concept) RETURN co",
+    "concept_with_id": "MATCH (co:Concept {concept_id: $concept_id}) RETURN co",
+    "concept_answer": "MATCH (co:Concept {concept_id: $concept_id}) RETURN co.que AS question, co.ans AS answer",
+
+    # Deleting
+    "delete_concepts_by_course_id": "MATCH (c:Course {course_id: $course_id})<-[:has]-(co:Concept) DETACH DELETE co"
 }
 
 query_bp = Blueprint('query', __name__)
@@ -42,10 +50,10 @@ def run_query(query):
     if query not in query_map:
         return jsonify({"error": "Invalid query key"}), 400
 
-    uid = request.args.get('uid')
-    cid = request.args.get('cid')
-    qid = request.args.get('qid')
-    limit = request.args.get('uid')
+    uid = request.args.get('teacher_id')
+    cid = request.args.get('course_id')
+    qid = request.args.get('concept_id')
+    limit = request.args.get('limit')
 
     parameters = {}
     if uid: parameters['teacher_id'] = uid
@@ -59,8 +67,9 @@ def run_query(query):
     log_info(f'Calling {query}', parameters)
     result = client.run_query(query, **parameters)
 
-    log_info(f'Result', result)
-    return jsonify(result)
+    if result is not None:
+        log_info(f'Result', result)
+        return jsonify(result), 200
+    else:
+        return jsonify({'error': 'Failed to run query'}), 400
 
-
-# Function to execute Neo4j queries

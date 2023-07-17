@@ -4,6 +4,7 @@ from flask import Blueprint, request, jsonify
 
 from graphdb.client import Neo4jClient
 from logger import log_error, log_info
+from tools.chatgpt import chat_with_open_ai
 from tools.qna import extract_qna_list_from_string
 
 upload_bp = Blueprint('upload', __name__)
@@ -26,6 +27,23 @@ def upload_to_knowledge_base():
     if isinstance(qna, str):
         qna = extract_qna_list_from_string(qna)
         log_info('Found QnA from text', qna)
+
+        # task = "embedding text knowledge into graph db"
+        converstation = [
+            {'role': 'system',
+             'content': f'You are helpful tutor AI whose job is to embed text knowledge into graph database.'
+                        f'The goal is to create concepts as nodes. Each concept can have a question with an answer.'
+                        f'Given a list of concepts, find relationships between the concepts.'
+                        f'Respond with these relationship in following format.'
+                        f'A--PREREQUISITE-->B'
+                        f'C--POSTREQUISITE-->B'
+                        f'C--SIMILARITY--0.8-->B'},
+            {'role': 'user', 'content': qna}
+        ]
+
+        relationships = chat_with_open_ai(conversation=converstation, temperature=1)
+        log_info('Generated relationship', relationships)
+
     elif not isinstance(qna, list):
         log_error('Failed to process QnA, not a list, expecting str or list', qna)
         return jsonify({'error': 'qna invalid, needs to be list of {"question": <q1>, "answer": <a1>}.'}), 400

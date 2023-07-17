@@ -1,4 +1,5 @@
 from graphdb.connect import connect_to_neo4j_driver
+from logger import log_error
 
 
 class Neo4jClient:
@@ -14,9 +15,13 @@ class Neo4jClient:
         self.driver = connect_to_neo4j_driver()
 
     def run_query(self, query, **params):
-        with self.driver.session() as session:
-            result = session.run(query, **params)
-            return result.data()
+        try:
+            with self.driver.session() as session:
+                result = session.run(query, **params)
+                return result.data()
+        except Exception as e:
+            log_error('Failed to execute query', e)
+            return None
 
     def get_teacher(self, teacher_id):
         query = "MATCH (t:Teacher {teacher_id: $teacher_id}) RETURN t"
