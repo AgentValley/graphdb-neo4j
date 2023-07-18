@@ -38,7 +38,7 @@ query_map = {
     "concept_answer": "MATCH (co:Concept {concept_id: $concept_id}) RETURN co.que AS question, co.ans AS answer",
 
     # Deleting
-    "delete_concepts_by_course_id": "MATCH (c:Course {course_id: $course_id})<-[:has]-(co:Concept) DETACH DELETE co"
+    "delete_concepts_by_course_id": "MATCH (c:Course {course_id: $course_id})-[:HAS]->(concept) DETACH DELETE concept"
 }
 
 query_bp = Blueprint('query', __name__)

@@ -68,6 +68,12 @@ class Neo4jClient:
         parameters = {"concept_id": concept_id, "prerequisite_id": prerequisite_id}
         return self.run_query(query, **parameters)
 
+    def create_similarity_relationship(self, concept_id, similarity_id, value):
+        query = "MATCH (c:Concept {concept_id: $concept_id}), (p:Concept {concept_id: $similarity_id}) " \
+                "MERGE (c)-[:SIMILARITY]->(sim:Similarity {value: $value})-[:SIMILARITY_OF]->(p)"
+        parameters = {"concept_id": concept_id, "prerequisite_id": similarity_id}
+        return self.run_query(query, **parameters)
+
     def find_prerequisites(self, concept_id):
         query = """
         MATCH (c:Concept {concept_id: $concept_id})<-[:PREREQUISITE_OF]-(p:Concept)

@@ -10,7 +10,7 @@ setup_logger('logs/neo4jdb.logs')
 app = Flask(__name__)
 
 
-@app.route('/health', methods=['GET'])
+@app.route('/', methods=['GET'])
 def hello():
     return jsonify('ok'), 200
 
