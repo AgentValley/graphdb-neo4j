@@ -75,3 +75,7 @@ def log_info(message, *args, **kwargs):
 def log_debug(message, *args, **kwargs):
     logger = logging.getLogger(__name__)
     logger.debug(construct_log_message(message, *args, **kwargs))
+
+def log_warn(message, *args, **kwargs):
+    logger = logging.getLogger(__name__)
+    logger.warn(construct_log_message(message, *args, **kwargs))

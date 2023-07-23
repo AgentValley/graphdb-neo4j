@@ -1,5 +1,5 @@
 from graphdb.connect import connect_to_neo4j_driver
-from logger import log_error
+from logger import log_error, log_info
 
 
 class Neo4jClient:
@@ -70,8 +70,10 @@ class Neo4jClient:
 
     def create_similarity_relationship(self, concept_id, similarity_id, value):
         query = "MATCH (c:Concept {concept_id: $concept_id}), (p:Concept {concept_id: $similarity_id}) " \
-                "MERGE (c)-[:SIMILARITY]->(sim:Similarity {value: $value})-[:SIMILARITY_OF]->(p)"
-        parameters = {"concept_id": concept_id, "prerequisite_id": similarity_id, "value": value}
+                "MERGE (sim:Similarity {value: $value}) " \
+                "MERGE (c)-[:SIMILARITY]->(sim)-[:SIMILARITY_OF]->(p)"
+        parameters = {"concept_id": concept_id, "similarity_id": similarity_id, "value": value}
+        log_info('Create Similarity Relationship', parameters)
         return self.run_query(query, **parameters)
 
     def find_prerequisites(self, concept_id):
