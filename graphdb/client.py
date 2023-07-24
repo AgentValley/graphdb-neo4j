@@ -47,12 +47,12 @@ class Neo4jClient:
         parameters = {"course_id": course_id, "teacher_id": teacher_id}
         return self.run_query(query, **parameters)
 
-    def create_concept(self, concept_id, question, answer, course_id, prerequisites=None):
+    def create_concept(self, concept_id, concept, questions, course_id, prerequisites=None):
         query = "MATCH (c:Course {course_id: $course_id}) " \
-                "MERGE (co:Concept {concept_id: $concept_id, que: $question, ans: $answer}) " \
+                "MERGE (co:Concept {concept_id: $concept_id, concept: $concept}) " \
                 "MERGE (c)-[:HAS]->(co) " \
                 "RETURN co"
-        parameters = {"concept_id": concept_id, "question": question, "answer": answer, "course_id": course_id}
+        parameters = {"course_id": course_id, "concept_id": concept_id, "concept": concept}
         with self.driver.session() as session:
             result = session.run(query, parameters)
             single = result.single()

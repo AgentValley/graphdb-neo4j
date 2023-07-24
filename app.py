@@ -14,6 +14,7 @@ driver = connect_to_neo4j_driver()
 if driver is None:
     raise IOError('Failed to connet to neo4j.')
 
+
 @app.route('/', methods=['GET'])
 def hello():
     return jsonify('ok'), 200
