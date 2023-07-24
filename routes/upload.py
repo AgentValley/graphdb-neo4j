@@ -12,7 +12,7 @@ upload_bp = Blueprint('upload', __name__)
 
 
 @upload_bp.route('', methods=['POST'])
-def upload_to_knowledge_base():
+def upload_to_knowledge_graph():
 
     uid = request.json.get('uid')
     cid = request.json.get('cid')
@@ -68,17 +68,17 @@ def upload_to_knowledge_base():
         client = Neo4jClient()
         teacher = client.get_teacher(uid)
         if not teacher:
-            log_info('Teacher does not exists', 'Creating Teacher')
+            log_info('Teacher does not exists, creating Teacher')
             teacher = client.create_teacher(uid)
         log_info('Teacher', teacher)
         course = client.get_course(cid)
         if not course:
-            log_info('Course does not exists', 'Creating Course')
+            log_info('Course does not exists, creating Course')
             course = client.create_course_for_teacher(cid, uid)
         log_info('Course', course)
+
         # Add concepts
         ids = qna_with_id.keys()
-        created_qids = []
         for qid in ids:
             q = qna_with_id[qid]
             client.create_concept(qid, q.get('question'), q.get('answer'), cid)
@@ -88,6 +88,7 @@ def upload_to_knowledge_base():
                 prerequisites_for_qid = prerequisites[qid]
                 for pid in prerequisites_for_qid:
                     client.create_prerequisite_relationship(qid, pid)
+
         if similarities is not {}:
             for qid in similarities.keys():
                 similarities_for_qid = similarities[qid]
