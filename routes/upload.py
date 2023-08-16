@@ -1,17 +1,16 @@
 from flask import Blueprint, request, jsonify
 
-from flask import Blueprint, request, jsonify
-
 from logger import log_error
 from tools.chatgpt import get_relationships_among_concepts
 from tools.graph import parse_relationships_string_with_regex, create_nodes_and_relationship
 from tools.qna import extract_concepts_from_string
+from tools.query import get_all_concepts
 
 upload_bp = Blueprint('upload', __name__)
 
 
-@upload_bp.route('', methods=['POST'])
-def upload_to_knowledge_graph():
+@upload_bp.route('/qna', methods=['POST'])
+def upload_qna_to_knowledge_graph():
     uid = request.json.get('uid')
     cid = request.json.get('cid')
     qna = request.json.get('qna')
@@ -36,7 +35,43 @@ def upload_to_knowledge_graph():
         return jsonify({'error': 'qna invalid, needs to be list of {"question": <q1>, "answer": <a1>}.'}), 400
 
     try:
-        create_nodes_and_relationship(uid, cid, concepts_dict, prerequisites, similarities)
+        create_nodes_and_relationship(uid, cid, concepts_dict=concepts_dict, prerequisites=prerequisites,
+                                      similarities=similarities)
+    except Exception as e:
+        log_error('Failed to upload qna', e)
+        return jsonify({'error': f'Failed to upload qna. {e}'}), 200
+
+    return jsonify({'response': 'Course updated.'}), 200
+
+
+@upload_bp.route('/concept', methods=['POST'])
+def upload_concept_to_knowledge_graph():
+    uid = request.json.get('uid')
+    cid = request.json.get('cid')
+    qid = request.json.get('qid')
+    topic = request.json.get('topic')
+    question = request.json.get('question')
+
+    if not qid:
+        return jsonify({'error': 'qid not found. Add qid of the concept.'}), 400
+    if not cid:
+        return jsonify({'error': 'cid not found. Add cid of the concept.'}), 400
+    if not topic:
+        return jsonify({'error': 'topic not found. Add topic of the concept.'}), 400
+    if not question:
+        return jsonify({'error': 'question not found. Add question of the concept.'}), 400
+
+    old_with_new_concepts = list(get_all_concepts(cid)) or []
+    new_concept = {'concept_id': qid, 'topic': topic, 'question': question}
+
+    old_with_new_concepts.append(new_concept)
+
+    relationship_str = get_relationships_among_concepts(concepts_list=old_with_new_concepts)
+    prerequisites, similarities = parse_relationships_string_with_regex(relationship_str)
+
+    try:
+        create_nodes_and_relationship(uid, cid, concepts_list=old_with_new_concepts, prerequisites=prerequisites,
+                                      similarities=similarities)
     except Exception as e:
         log_error('Failed to upload qna', e)
         return jsonify({'error': f'Failed to upload qna. {e}'}), 200

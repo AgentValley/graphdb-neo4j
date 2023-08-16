@@ -6,7 +6,7 @@ from logger import log_warn
 
 def extract_qna_list_from_string(text):
     # Regular expression pattern to match questions and answers
-    pattern = r"Concept:(.*?)Question:(.*?)(?=Answer:|$)(.*?)\n"
+    pattern = r"Topic:(.*?)Question:(.*?)(?=Answer:|$)(.*?)\n"
 
     # Extracting matches from the text
     matches = re.findall(pattern, text, re.DOTALL)
@@ -14,14 +14,14 @@ def extract_qna_list_from_string(text):
         log_warn('Failed to extract QnA from given text', text)
 
     # Constructing the list of dictionaries
-    qa_list = [{"concept": c.strip(), "question": q.strip(), "answer": a.strip()} for c, q, a in matches]
+    qa_list = [{"topic": c.strip(), "question": q.strip(), "answer": a.strip()} for c, q, a in matches]
 
     return qa_list
 
 
 def extract_concepts_from_string(text):
     # Regular expression pattern to match questions and answers
-    pattern = r"Concept:(.*?)Question:(.*?)(?=Answer:|$)(.*?)\n"
+    pattern = r"Topic:(.*?)Question:(.*?)(?=Answer:|$)(.*?)\n"
 
     # Extracting matches from the text
     matches = re.findall(pattern, text, re.DOTALL)

@@ -8,16 +8,27 @@ from logger import log_info
 openai.api_key = OPENAI_API_KEY
 
 
-def get_relationships_among_concepts(concepts_dict):
-    log_info('Found following concepts:', concepts_dict.keys())
+def get_relationships_among_concepts(concepts_dict=None, concepts_list=None):
+    concept_text = None
+    if concepts_dict:
+        titles = concepts_dict.keys()
+        concept_text = "\n\n".join([
+            f"{t}: {titles[t].get('concept', 'Empty')}\n"
+            f"Q[{t}]: {titles[t].get('question', 'Empty')}\n"
+            f"A[{t}]: {titles[t].get('answer', 'Empty')}"
+            for t in range(1, len(titles) + 1)
+        ])
 
-    titles = concepts_dict.keys()
-    concept_text = "\n\n".join([
-        f"C{t}: {titles[t].get('concept', 'Empty')}\n"
-        f"{t}: {titles[t].get('question', 'Empty')}\n"
-        f"A{t}: {titles[t].get('answer', 'Empty')}"
-        for t in range(1, len(titles) + 1)
-    ])
+    if concepts_list:
+        concept_text = "\n\n".join([
+            f"{concept.get('concept_id')}: {concept.get('topic', 'Empty')}\n"
+            f"Q[{concept.get('concept_id')}]: {concept.get('question', 'Empty')}\n"
+            for concept in concepts_list
+        ])
+        
+    if not concept_text:
+        return ""
+
     converstation = [
         {'role': 'system',
          'content': f'You are helpful tutor AI whose job is to embed text knowledge into graph database.'
@@ -27,7 +38,7 @@ def get_relationships_among_concepts(concepts_dict):
                     f'C1--PREREQUISITE-->C2'
                     f'C3--SIMILARITY--0.8-->C4'
                     f'where C1, C2, C3... are the concepts, '
-                    f'where Q1, Q2, Q3... are the questions in the concepts, '
+                    f'where Q[1], Q[2], Q[3]... are the questions in the concepts, '
                     f'the relation PREREQUISITE denotes that C1 has prerequisite C1'
                     f'0.8 in SIMILARITY represets the similarity factor between C3 and C4.'
                     f'The value of SIMILARITY ranges from 0.1 to 1.0 where 1.0 means they are the same in meaning.'},
