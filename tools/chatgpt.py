@@ -23,7 +23,7 @@ def get_relationships_among_concepts(concepts_dict=None, concepts_list=None):
         concept_text = "\n\n".join([
             f"{concept.get('concept_id')}: {concept.get('topic', 'Empty')}\n"
             f"Q[{concept.get('concept_id')}]: {concept.get('question', 'Empty')}\n"
-            for concept in concepts_list
+            for concept in concepts_list if concept
         ])
         
     if not concept_text:

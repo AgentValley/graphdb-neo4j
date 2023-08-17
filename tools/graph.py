@@ -57,10 +57,11 @@ def create_nodes_and_relationship(uid, cid, concepts_dict=None, concepts_list=No
     # Add concepts by list
     if concepts_list:
         for concept in concepts_list:
-            concept_id = concept['concept_id']
-            topic = concept['topic']
-            question = concept['question']
-            client.create_concept(cid, concept_id, topic, question)
+            if concept:
+                concept_id = concept['concept_id']
+                topic = concept['topic']
+                question = concept['question']
+                client.create_concept(cid, concept_id, topic, question)
 
     if prerequisites and prerequisites is not {}:
         for qid in prerequisites.keys():
