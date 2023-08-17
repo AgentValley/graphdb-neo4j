@@ -35,24 +35,39 @@ query_map = {
     "concept_with_id": "MATCH (co:Concept {concept_id: $concept_id}) RETURN co",
     "concept_answer": "MATCH (co:Concept {concept_id: $concept_id}) RETURN co.que AS question, co.ans AS answer",
 
+    # Learning
+    "first_concept": "MATCH (c:Course {course_id: $course_id})-[:HAS]->(co:Concept) "
+                     "WITH co, [(p)-[:PREREQUISITE_OF]->(co) | p] AS prerequisites "
+                     "ORDER BY size(prerequisites) "
+                     "RETURN co "
+                     "LIMIT 3",
+    "next_concept": "MATCH (c:Course {course_id: $course_id})-[:has]->(co:Concept) RETURN co LIMIT 1",
+
     # Deleting
     "delete_concepts_by_course_id": "MATCH (c:Course {course_id: $course_id})-[:HAS]->(concept) DETACH DELETE concept"
 }
 
 
 def run_query(query, parameters):
-    query = query_map[query]
+    cypher_query = query_map[query]
     client = Neo4jClient()
 
-    log_info(f'Calling {query}', parameters)
-    result = client.run_query(query, **parameters)
+    log_info(f'Calling {cypher_query}', parameters)
+    result = client.run_query(cypher_query, **parameters)
 
-    return result
+    if result:
+        if isinstance(result, list):
+            return [r.get('t') or r.get('c') or r.get('co') for r in result]
+        else:
+            return result.get('t') or result.get('c') or result.get('co')
+    else:
+        return None
 
 
 def get_all_concepts(cid):
     parameters = {}
-    if cid: parameters['course_id'] = cid
+    if cid:
+        parameters['course_id'] = cid
 
     result = run_query("concepts_associated_with_course", parameters)
     if result:

@@ -64,7 +64,7 @@ class Neo4jClient:
 
     def create_prerequisite_relationship(self, concept_id, prerequisite_id):
         query = "MATCH (c:Concept {concept_id: $concept_id}), (p:Concept {concept_id: $prerequisite_id}) " \
-                "MERGE (c)-[:PREREQUISITE_OF]->(p)"
+                "MERGE (p)-[:PREREQUISITE_OF]->(c)"
         parameters = {"concept_id": concept_id, "prerequisite_id": prerequisite_id}
         return self.run_query(query, **parameters)
 

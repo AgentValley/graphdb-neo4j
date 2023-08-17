@@ -1,25 +1,26 @@
 from flask import request, Blueprint, jsonify
 
-from graphdb.client import Neo4jClient
 from logger import log_info
-from tools.query import query_map
+from tools.query import query_map, run_query
 
 query_bp = Blueprint('query', __name__)
 
 
 # Define the route to execute the queries
 @query_bp.route('/<string:query>', methods=['GET'])
-def run_query(query):
+def query_knowledge_graph(query):
     if query not in query_map:
         return jsonify({"error": "Invalid query key"}), 400
 
-    uid = request.args.get('teacher_id')
-    cid = request.args.get('course_id')
-    qid = request.args.get('concept_id')
+    uid = request.args.get('uid')
+    student_id = request.args.get('student_id')
+    cid = request.args.get('cid')
+    qid = request.args.get('qid')
     limit = request.args.get('limit')
 
     parameters = {}
     if uid: parameters['teacher_id'] = uid
+    if student_id: parameters['student_id'] = student_id
     if cid: parameters['course_id'] = cid
     if qid: parameters['concept_id'] = qid
     if limit: parameters['limit'] = limit
