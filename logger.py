@@ -1,13 +1,36 @@
+import inspect
 import logging
 import logging.handlers
 
 from logging.handlers import TimedRotatingFileHandler
 
 
+def _get_caller_info():
+    stack = inspect.stack()
+    try:
+        # stack[0] is the current frame (inside format method)
+        # stack[1] is the caller frame (the log function call frame)
+        index = 1
+
+        while index < len(stack):
+            caller_frame = stack[index]
+            caller_filename = caller_frame.filename
+            caller_lineno = caller_frame.lineno
+            if "logger" not in caller_filename and "logging" not in caller_filename:
+                filename_parts = caller_filename.split('/')
+                return filename_parts[-1], caller_lineno
+            index += 1
+    except Exception as e:
+        print(e)
+    finally:
+        # Ensure the stack is released to prevent memory leaks
+        del stack
+
+
 class CustomFormatter(logging.Formatter):
-    grey = "\x1b[38;5;240m"
-    yellow = "\x1b[38;5;226m"
-    red = "\x1b[38;5;196m"
+    grey = "\x1b[38;5;248m"
+    yellow = "\x1b[38;5;221m"
+    red = "\x1b[38;5;203m"
     bold_red = "\x1b[31;1m"
     reset = "\x1b[0m"
 
@@ -25,6 +48,7 @@ class CustomFormatter(logging.Formatter):
         log_fmt = self.FORMATS.get(record.levelno)
         formatter = logging.Formatter(log_fmt)
         return formatter.format(record)
+
 
 def setup_logger(filename):
     logger = logging.getLogger()
@@ -76,6 +100,7 @@ def log_info(message, *args, **kwargs):
 def log_debug(message, *args, **kwargs):
     logger = logging.getLogger(__name__)
     logger.debug(construct_log_message(message, *args, **kwargs))
+
 
 def log_warn(message, *args, **kwargs):
     logger = logging.getLogger(__name__)

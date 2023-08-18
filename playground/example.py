@@ -21,8 +21,9 @@ def create_course(course_id="course123"):
 def add_concept(course_id="course123"):
     # Add knowledge to the graph database
     question = "What is the capital of France?"
-    answer = "The capital of France is Paris."
-    concept = client.create_concept(question, answer, course_id, [])
+    # answer = "The capital of France is Paris."
+    params = {'course_id': course_id, 'concept_id': 12345, 'question': question, 'weightage': 0.5}
+    concept = client.create_concept(params, [])
     print("Concept created:", concept)
 
 
@@ -31,10 +32,11 @@ def add_concepts(course_id="course123"):
     concepts = {}
     for i in range(1, 11):
         question = f"Question {i}"
-        answer = f"Answer {i}"
+        # answer = f"Answer {i}"
         prerequisites = random.sample(list(concepts.keys()), random.randint(0, min(3, i - 1)))
         concept_id = f"c{i}"
-        concept = client.create_concept(concept_id, question, answer, course_id, prerequisites)
+        params = {'course_id': course_id, 'concept_id': concept_id, 'question': question, 'weightage': 0.5}
+        concept = client.create_concept(params, prerequisites)
         concepts[f"c{i}"] = concept
         print(f"Concept {i} created:", concept)
 

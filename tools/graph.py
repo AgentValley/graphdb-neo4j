@@ -9,29 +9,52 @@ def parse_relationships_string_with_regex(relationships_string):
     similarities = {}
 
     relationship_pattern = r'(\S+)--(PREREQUISITE|SIMILARITY)(--(?:\S+|\d+\.\d+))?-->(\S+)'
-    matches = re.findall(relationship_pattern, relationships_string)
+    matches = re.findall(relationship_pattern, relationships_string, re.MULTILINE)
 
     for match in matches:
         source_node, relationship_type, value, target_node = match
         target_node = target_node.strip()
 
-        if relationship_type == "PREREQUISITE":
-            if target_node not in prerequisites:
-                prerequisites[target_node] = [source_node]
-            else:
-                prerequisites[target_node].append(source_node)
-        elif relationship_type == "SIMILARITY":
-            similarity_value = float(value.split('--')[1])
-            if target_node not in similarities:
-                similarities[target_node] = {source_node: similarity_value}
-            else:
-                similarities[target_node][source_node] = similarity_value
+        if target_node != source_node:
+            if relationship_type == "PREREQUISITE":
+                if target_node not in prerequisites:
+                    prerequisites[target_node] = [source_node]
+                else:
+                    prerequisites[target_node].append(source_node)
+            elif relationship_type == "SIMILARITY":
+                similarity_value = float(value.split('--')[1])
+                if target_node not in similarities:
+                    similarities[target_node] = {source_node: similarity_value}
+                else:
+                    similarities[target_node][source_node] = similarity_value
 
     return prerequisites, similarities
 
 
-def create_nodes_and_relationship(uid, cid, concepts_dict=None, concepts_list=None, prerequisites=None,
-                                  similarities=None):
+def parse_prerequisite_relationships_string_with_regex(relationships_string, concept=None):
+    prerequisites = {}
+
+    relationship_pattern = r'(\S+)--PREREQUISITE_OF-->(\S+)'
+    matches = re.findall(relationship_pattern, relationships_string, re.MULTILINE)
+
+    given_concept_id = concept.get('concept_id') if concept else None
+    for match in matches:
+        source_node, target_node = match
+        target_node = target_node.strip()
+
+        if given_concept_id and given_concept_id not in target_node and given_concept_id not in source_node:
+            continue
+
+        if target_node != source_node:
+            if target_node not in prerequisites:
+                prerequisites[target_node] = [source_node]
+            else:
+                prerequisites[target_node].append(source_node)
+
+    return prerequisites
+
+
+def create_nodes(uid, cid, concepts_dict=None, concepts_list=None):
     client = Neo4jClient()
 
     teacher = client.get_teacher(uid)
@@ -50,25 +73,30 @@ def create_nodes_and_relationship(uid, cid, concepts_dict=None, concepts_list=No
     if concepts_dict:
         topics = concepts_dict.keys()
         for topic in topics:
-            qid = concepts_dict[topic]['concept_id']
-            question = concepts_dict[topic]['question']
-            client.create_concept(cid, qid, topic, question)
+            params = topics[topic]
+            params['course_id'] = cid
+            client.create_concept(params)
 
     # Add concepts by list
     if concepts_list:
         for concept in concepts_list:
             if concept:
-                concept_id = concept['concept_id']
-                topic = concept['topic']
-                question = concept['question']
-                client.create_concept(cid, concept_id, topic, question)
+                params = concept
+                params['course_id'] = cid
+                client.create_concept(params)
 
+
+def create_prerequisite_relationship(prerequisites):
+    client = Neo4jClient()
     if prerequisites and prerequisites is not {}:
         for qid in prerequisites.keys():
             prerequisites_for_qid = prerequisites[qid]
             for pid in prerequisites_for_qid:
                 client.create_prerequisite_relationship(qid, pid)
 
+
+def create_similarity_relationship(similarities):
+    client = Neo4jClient()
     if similarities and similarities is not {}:
         for qid in similarities.keys():
             similarities_for_qid = similarities[qid]

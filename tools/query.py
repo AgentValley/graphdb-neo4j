@@ -1,5 +1,5 @@
 from graphdb.client import Neo4jClient
-from logger import log_info
+from logger import log_info, log_error
 
 """
 queries
@@ -39,9 +39,9 @@ query_map = {
     "first_concept": "MATCH (c:Course {course_id: $course_id})-[:HAS]->(co:Concept) "
                      "WITH co, [(p)-[:PREREQUISITE_OF]->(co) | p] AS prerequisites "
                      "ORDER BY size(prerequisites) "
-                     "RETURN co "
-                     "LIMIT 3",
-    "next_concept": "MATCH (c:Course {course_id: $course_id})-[:has]->(co:Concept) RETURN co LIMIT 1",
+                     "RETURN co",
+    "next_concept": "MATCH (c:Concept {concept_id: $concept_id})-[:PREREQUISITE_OF]->(co) " 
+                    "RETURN co",
 
     # Deleting
     "delete_concepts_by_course_id": "MATCH (c:Course {course_id: $course_id})-[:HAS]->(concept) DETACH DELETE concept"
@@ -53,14 +53,18 @@ def run_query(query, parameters):
     client = Neo4jClient()
 
     log_info(f'Calling {cypher_query}', parameters)
-    result = client.run_query(cypher_query, **parameters)
+    try:
+        result = client.run_query(cypher_query, **parameters)
 
-    if result:
-        if isinstance(result, list):
-            return [r.get('t') or r.get('c') or r.get('co') for r in result]
+        if result:
+            if isinstance(result, list):
+                return [r.get('t') or r.get('c') or r.get('co') for r in result]
+            else:
+                return result.get('t') or result.get('c') or result.get('co')
         else:
-            return result.get('t') or result.get('c') or result.get('co')
-    else:
+            return None
+    except Exception as e:
+        log_error(f'Failed to run query {query}: {e}')
         return None
 
 
@@ -70,7 +74,4 @@ def get_all_concepts(cid):
         parameters['course_id'] = cid
 
     result = run_query("concepts_associated_with_course", parameters)
-    if result:
-        return [co.get('co') for co in result]
-    else:
-        return []
+    return result or []

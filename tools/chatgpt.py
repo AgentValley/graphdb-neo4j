@@ -1,52 +1,117 @@
+import re
 from time import sleep
 
 import openai
 
 from const import OPENAI_API_KEY, OPENAI_MODEL, OPENAI_MAX_TOKENS
-from logger import log_info
+from logger import log_info, log_warn
 
 openai.api_key = OPENAI_API_KEY
 
 
-def get_relationships_among_concepts(concepts_dict=None, concepts_list=None):
+def create_concept_text(concepts_dict=None, concepts_list=None):
     concept_text = None
     if concepts_dict:
-        titles = concepts_dict.keys()
+        concepts = concepts_dict.keys()
         concept_text = "\n\n".join([
-            f"{t}: {titles[t].get('concept', 'Empty')}\n"
-            f"Q[{t}]: {titles[t].get('question', 'Empty')}\n"
-            f"A[{t}]: {titles[t].get('answer', 'Empty')}"
-            for t in range(1, len(titles) + 1)
+            f"{concepts[t].get('concept_id')}: {concepts[t].get('topic', 'Empty')}\n"
+            f"Q[{concepts[t].get('concept_id')}]: {concepts[t].get('question', 'Empty')}\n"
+            f"W[{concepts[t].get('concept_id')}]: {concepts[t].get('weightage')}" if concepts[t].get('weightage') else ""
+            for t in range(0, len(concepts))
         ])
 
     if concepts_list:
         concept_text = "\n\n".join([
             f"{concept.get('concept_id')}: {concept.get('topic', 'Empty')}\n"
             f"Q[{concept.get('concept_id')}]: {concept.get('question', 'Empty')}\n"
+            f"W[{concept.get('concept_id')}]: {concept.get('weightage', 0.5)}" if concept.get('weightage') else ""
             for concept in concepts_list if concept
         ])
-        
+
+    return concept_text
+
+
+def get_relationships_among_concepts(concepts_dict=None, concepts_list=None):
+    concept_text = create_concept_text(concepts_dict=concepts_dict, concepts_list=concepts_list)
     if not concept_text:
         return ""
 
     converstation = [
         {'role': 'system',
-         'content': f'You are helpful tutor AI whose job is to embed text knowledge into graph database.'
-                    f'The goal is to create concepts as nodes. Each concept have multiple questions and answers.'
-                    f'Given a list of concepts, find relationships between them.'
-                    f'Respond with these relationship in following format.'
-                    f'C1--PREREQUISITE-->C2'
-                    f'C3--SIMILARITY--0.8-->C4'
-                    f'where C1, C2, C3... are the concepts, '
-                    f'where Q[1], Q[2], Q[3]... are the questions in the concepts, '
-                    f'the relation PREREQUISITE denotes that C1 has prerequisite C1'
-                    f'0.8 in SIMILARITY represets the similarity factor between C3 and C4.'
+         'content': f'You are helpful tutor AI whose job is to embed text knowledge into graph database. '
+                    f'The goal is to create concepts as nodes. Each concept have multiple questions and answers. '
+                    f'Given a list of concepts, find relationships between them. '
+                    f'Respond with these relationship in following format. \n'
+                    f'C1--PREREQUISITE_OF-->C2 \n'
+                    f'C3--SIMILARITY--0.8-->C4 \n'
+                    f'where C1, C2, C3... are the concepts, \n'
+                    f'where Q[1], Q[2], Q[3]... are the questions in the concepts, \n'
+                    f'where W[1], W[2], W[3]... are the weightage of concepts, \n'
+                    f'the relation PREREQUISITE_OF denotes that C1 has prerequisite C1 \n'
+                    f'0.8 in SIMILARITY represets the similarity factor between C3 and C4. \n'
                     f'The value of SIMILARITY ranges from 0.1 to 1.0 where 1.0 means they are the same in meaning.'},
         {'role': 'user', 'content': concept_text}
     ]
 
     relationship_str = chat_with_open_ai(conversation=converstation, temperature=1)
     return relationship_str
+
+
+def find_prerequisite_relationship_of_concept(concept, existing_concepts):
+    existing_concepts_text = create_concept_text(concepts_list=existing_concepts)
+    if not existing_concepts_text:
+        return ""
+
+    converstation = [
+        {'role': 'system',
+         'content': f'You are helpful tutor AI whose job is to embed text knowledge into graph database. '
+                    f'Given a list of concepts: \n'
+                    f'{existing_concepts_text}'
+                    f'where C1, C2, C3... are the names of the concept, \n'
+                    f'where Q[1], Q[2], Q[3]... are the questions in the concepts, \n'
+                    f'Respond only with the prerequisite relationship of given concept by user wh other conceptsit. '
+                    f'For example, \n'
+                    f'C1--PREREQUISITE_OF-->C2 \n'
+                    f'C2--PREREQUISITE_OF-->C3 \n'
+                    f'where PREREQUISITE_OF denotes that C1 is prerequisite of C2 and C2 is prerequisite of C3.'},
+        {'role': 'user', 'content': f'{concept.get("concept_id")}: {concept.get("topic")}\n'
+                                    f'Q[{concept.get("concept_id")}]: {concept.get("question")}'}
+    ]
+
+    relationship_str = chat_with_open_ai(conversation=converstation, temperature=1)
+    return relationship_str
+
+
+def find_weightage_of_concepts(concept, existing_concepts):
+    existing_concepts_text = create_concept_text(concepts_list=existing_concepts)
+
+    converstation = [
+        {'role': 'system',
+         'content': f'You are helpful tutor AI whose job is to embed text knowledge into graph database. '
+                    f'Given a list of concepts: \n'
+                    f'{existing_concepts_text}'
+                    f'where C1, C2, C3... are the concepts, '
+                    f'where Q[1], Q[2], Q[3]... are the questions in the concepts, '
+                    f'where W[1], W[2], W[3]... are the weightage of concepts, '
+                    f'Respond only with the weightage of given concept, for example. \n'
+                    f'C1--0.8 \n'
+                    f'where 0.8 denotes the weightage of C1 among all other concepts'},
+        {'role': 'user', 'content': f'{concept.get("concept_id")}: {concept.get("topic")}\n'
+                                    f'Q[{concept.get("concept_id")}]: {concept.get("question")}'}
+    ]
+
+    weightage_str = chat_with_open_ai(conversation=converstation, temperature=1)
+    pattern = r'(\S+)--(\d+\.\d+)'
+    matches = re.findall(pattern, weightage_str, re.MULTILINE)
+    for match in matches:
+        concept_id, weightage = match
+        if concept.get("concept_id") in concept_id:
+            try:
+                return float(weightage)
+            except Exception as e:
+                log_warn(f'Failed to get weightage of {concept.get("concept_id")}: {e}')
+
+    return 0.5
 
 
 def chat_with_open_ai(conversation, model=OPENAI_MODEL, temperature=0):
@@ -83,8 +148,8 @@ def chat_with_open_ai(conversation, model=OPENAI_MODEL, temperature=0):
             if retry >= max_retry:
                 print(f"Exiting due to excessive errors in API: {oops}")
                 return str(oops)
-            print(f'Retrying in {2 ** (retry - 1) * 5} seconds...')
-            sleep(2 ** (retry - 1) * 5)
+            print(f'Retrying in {2 ** (retry - 1) * 3} seconds...')
+            sleep(2 ** (retry - 1) * 3)
 
 
 def split_long_messages(messages):

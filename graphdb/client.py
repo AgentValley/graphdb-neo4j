@@ -47,19 +47,18 @@ class Neo4jClient:
         parameters = {"course_id": course_id, "teacher_id": teacher_id}
         return self.run_query(query, **parameters)
 
-    def create_concept(self, course_id, concept_id, topic, question, prerequisites=None):
+    def create_concept(self, params, prerequisites=None):
         query = "MATCH (c:Course {course_id: $course_id}) " \
-                "MERGE (co:Concept {concept_id: $concept_id, topic: $topic, question: $question}) " \
+                "MERGE (co:Concept {concept_id: $concept_id, topic: $topic, question: $question, weightage: $weightage}) " \
                 "MERGE (c)-[:HAS]->(co) " \
                 "RETURN co"
-        parameters = {"course_id": course_id, "concept_id": concept_id, "topic": topic, "question": question}
         with self.driver.session() as session:
-            result = session.run(query, parameters)
+            result = session.run(query, params)
             single = result.single()
             concept = single["co"] if single else None
             if prerequisites:
                 for prerequisite_id in prerequisites:
-                    self.create_prerequisite_relationship(concept_id, prerequisite_id)
+                    self.create_prerequisite_relationship(concept.get('concept_id'), prerequisite_id)
         return concept
 
     def create_prerequisite_relationship(self, concept_id, prerequisite_id):
