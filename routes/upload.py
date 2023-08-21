@@ -1,12 +1,10 @@
 from flask import Blueprint, request, jsonify
 
 from logger import log_error
-from tools.chatgpt import get_relationships_among_concepts, find_weightage_of_concepts, \
-    find_prerequisite_relationship_of_concept
-from tools.graph import parse_relationships_string_with_regex, parse_prerequisite_relationships_string_with_regex, \
-    create_nodes, create_prerequisite_relationship, create_similarity_relationship
+from tools.graph import get_relationships_among_concepts
+from tools.graph import parse_relationships_string_with_regex, create_nodes, create_prerequisite_relationship, \
+    create_similarity_relationship
 from tools.qna import extract_concepts_from_string
-from tools.query import get_all_concepts
 
 upload_bp = Blueprint('upload', __name__)
 
@@ -54,6 +52,7 @@ def upload_concept_to_knowledge_graph():
     qid = request.json.get('qid')
     topic = request.json.get('topic')
     question = request.json.get('question')
+    weightage = request.json.get('weightage')
 
     if not qid:
         return jsonify({'error': 'qid not found. Add qid of the concept.'}), 400
@@ -64,20 +63,20 @@ def upload_concept_to_knowledge_graph():
     if not question:
         return jsonify({'error': 'question not found. Add question of the concept.'}), 400
 
-    existing_concepts = list(get_all_concepts(cid)) or []
-    new_concept = {'concept_id': qid, 'topic': topic, 'question': question}
-    weightage = find_weightage_of_concepts(new_concept, existing_concepts)
-    new_concept['weightage'] = weightage
+    # existing_concepts = list(get_all_concepts(cid)) or []
+    new_concept = {'concept_id': qid, 'topic': topic, 'question': question, 'weightage': weightage}
+    # weightage = find_weightage_of_concepts(new_concept, existing_concepts)
+    # new_concept['weightage'] = weightage
 
     # old_with_new_concepts.append(new_concept)
 
-    prerequisite_rel_str = find_prerequisite_relationship_of_concept(new_concept, existing_concepts)
-    prerequisites = parse_prerequisite_relationships_string_with_regex(prerequisite_rel_str, new_concept)
+    # prerequisite_rel_str = find_prerequisite_relationship_of_concept(new_concept, existing_concepts)
+    # prerequisites = parse_prerequisite_relationships_string_with_regex(prerequisite_rel_str, new_concept)
     # relationship_str = get_relationships_among_concepts(concepts_list=old_with_new_concepts)
     # prerequisites, similarities = parse_relationships_string_with_regex(relationship_str)
     try:
         create_nodes(uid, cid, concepts_list=[new_concept])
-        create_prerequisite_relationship(prerequisites)
+        # create_prerequisite_relationship(prerequisites)
     except Exception as e:
         log_error('Failed to upload qna', e)
         return jsonify({'error': f'Failed to upload qna. {e}'}), 200
