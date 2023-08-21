@@ -1,4 +1,11 @@
+import os
+import sys
 import random
+
+project_root = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
+print(project_root)
+# Add the project root directory to the Python path
+sys.path.append(project_root)
 
 from graphdb.client import Neo4jClient
 
@@ -31,11 +38,12 @@ def add_concepts(course_id="course123"):
     # Create Concepts
     concepts = {}
     for i in range(1, 11):
+        topic = f"Topic {i}"
         question = f"Question {i}"
         # answer = f"Answer {i}"
         prerequisites = random.sample(list(concepts.keys()), random.randint(0, min(3, i - 1)))
         concept_id = f"c{i}"
-        params = {'course_id': course_id, 'concept_id': concept_id, 'question': question, 'weightage': 0.5}
+        params = {'course_id': course_id, 'concept_id': concept_id, 'topic': topic, 'question': question, 'weightage': 0.5}
         concept = client.create_concept(params, prerequisites)
         concepts[f"c{i}"] = concept
         print(f"Concept {i} created:", concept)
