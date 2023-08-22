@@ -61,6 +61,17 @@ class Neo4jClient:
                     self.create_prerequisite_relationship(concept.get('concept_id'), prerequisite_id)
         return concept
 
+    def delete_concept(self, concept_id):
+        query = "MATCH (c:Concept {concept_id: $concept_id})" \
+                "OPTIONAL MATCH (c)-[r]-()" \
+                "DELETE c, r"
+        return self.run_query(query, **{"concept_id": concept_id})
+
+    def delete_relationship_of_concept(self, concept_id):
+        query = "MATCH (c:Concept {qid: 'your_qid_here'})-[r]-()" \
+                "DELETE r"
+        return self.run_query(query, **{"concept_id": concept_id})
+
     def create_prerequisite_relationship(self, concept_id, prerequisite_id):
         query = "MATCH (c:Concept {concept_id: $concept_id}), (p:Concept {concept_id: $prerequisite_id}) " \
                 "MERGE (p)-[:PREREQUISITE_OF]->(c)"

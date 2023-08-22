@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify
 
 from logger import log_error
-from tools.graph import get_relationships_among_concepts
+from tools.graph import get_relationships_among_concepts, delete_concept_node_and_relationship
 from tools.graph import parse_relationships_string_with_regex, create_nodes, create_prerequisite_relationship, \
     create_similarity_relationship
 from tools.qna import extract_concepts_from_string
@@ -51,7 +51,7 @@ def upload_concept_to_knowledge_graph():
     cid = request.json.get('cid')
     qid = request.json.get('qid')
     topic = request.json.get('topic')
-    weightage = request.json.get('weightage')
+    weightage = request.json.get('weightage', 50)
     question = request.json.get('question')
     prerequisites = request.json.get('prerequisites')
     if isinstance(prerequisites, str):
@@ -81,7 +81,20 @@ def upload_concept_to_knowledge_graph():
         create_nodes(uid, cid, concepts_list=[new_concept])
         create_prerequisite_relationship(qid, prerequisites)
     except Exception as e:
-        log_error('Failed to upload qna', e)
-        return jsonify({'error': f'Failed to upload qna. {e}'}), 200
+        log_error('Failed to upload concept', e)
+        return jsonify({'error': f'Failed to upload concept. {e}'}), 200
 
     return jsonify({'response': 'Course updated.'}), 200
+
+
+@upload_bp.route('/concept', methods=['DELETE'])
+def delete_concept_from_knowledge_graph():
+    qid = request.args.get('qid')
+    try:
+        delete_concept_node_and_relationship(qid)
+    except Exception as e:
+        log_error(f'Failed to delete concept {e}')
+        return jsonify({'error': f'Failed to delete concept. {e}'}), 400
+
+    return jsonify({'response': 'ok'}), 200
+
