@@ -51,8 +51,11 @@ def upload_concept_to_knowledge_graph():
     cid = request.json.get('cid')
     qid = request.json.get('qid')
     topic = request.json.get('topic')
-    question = request.json.get('question')
     weightage = request.json.get('weightage')
+    question = request.json.get('question')
+    prerequisites = request.json.get('prerequisites')
+    if isinstance(prerequisites, str):
+        prerequisites = prerequisites.split(',')
 
     if not qid:
         return jsonify({'error': 'qid not found. Add qid of the concept.'}), 400
@@ -76,7 +79,7 @@ def upload_concept_to_knowledge_graph():
     # prerequisites, similarities = parse_relationships_string_with_regex(relationship_str)
     try:
         create_nodes(uid, cid, concepts_list=[new_concept])
-        # create_prerequisite_relationship(prerequisites)
+        create_prerequisite_relationship(qid, prerequisites)
     except Exception as e:
         log_error('Failed to upload qna', e)
         return jsonify({'error': f'Failed to upload qna. {e}'}), 200

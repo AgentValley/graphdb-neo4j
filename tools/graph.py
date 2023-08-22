@@ -192,13 +192,18 @@ def create_nodes(uid, cid, concepts_dict=None, concepts_list=None):
                 client.create_concept(params)
 
 
-def create_prerequisite_relationship(prerequisites):
+def create_prerequisite_relationship(qid, prerequisites):
     client = Neo4jClient()
-    if prerequisites and prerequisites is not {}:
-        for qid in prerequisites.keys():
-            prerequisites_for_qid = prerequisites[qid]
+
+    if prerequisites and isinstance(prerequisites, list):
+        for pid in prerequisites:
+            client.create_prerequisite_relationship(qid, pid)
+
+    if prerequisites and isinstance(prerequisites, dict):
+        for _qid in prerequisites.keys():
+            prerequisites_for_qid = prerequisites[_qid]
             for pid in prerequisites_for_qid:
-                client.create_prerequisite_relationship(qid, pid)
+                client.create_prerequisite_relationship(_qid, pid)
 
 
 def create_similarity_relationship(similarities):
